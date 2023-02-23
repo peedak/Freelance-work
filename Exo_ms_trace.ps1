@@ -18,7 +18,7 @@ Added no.9 the log file to follow https://cynicalsys.com/2019/09/13/working-with
 #endregion
 
 # input the path of your .csv file here
-$list_input = "C:\temp\UPWORK\noja.csv"
+$list_input = "C:\temp\noja.csv"
 $list = Import-Csv $list_input -Delimiter ","
 
 # one way of measuring the time of the script running, I personally like this one the best
@@ -88,8 +88,8 @@ $stopwatch.Stop()
 $total_time_taken = "$($stopwatch.Elapsed.Hours) Hours, $($stopwatch.Elapsed.Seconds) seconds"
 
 # export the final csv and logs
-$final_output | Export-Csv "C:\temp\UPWORK\Mitre_Auto\final_output.csv"
+$final_output | Export-Csv "C:\temp\final_output.csv"
 
 $log_content = "Total number of pages searched - $total_pages_searched, total number of emails searched $total_emails_searched, total time taken $total_time_taken"
-$log_content | out-file "C:\temp\UPWORK\Mitre_Auto\log.txt"
+$log_content | out-file "C:\temp\log.txt"
 
