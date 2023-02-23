@@ -21,7 +21,7 @@ Added no.9 the log file to follow https://cynicalsys.com/2019/09/13/working-with
 $list_input = "C:\temp\noja.csv"
 $list = Import-Csv $list_input -Delimiter ";"
 
-# one way of measuring the time of the script running, I personally like this one the best
+# one way of measuring the time of the script running
 $stopwatch = [System.Diagnostics.Stopwatch]::StartNew()
 
 # setting some primary variables
