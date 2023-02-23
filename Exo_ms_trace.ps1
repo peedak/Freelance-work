@@ -91,5 +91,5 @@ $total_time_taken = "$($stopwatch.Elapsed.Hours) Hours, $($stopwatch.Elapsed.Sec
 $final_output | Export-Csv "C:\temp\final_output.csv"
 
 $log_content = "Total number of pages searched - $total_pages_searched, total number of emails searched $total_emails_searched, total time taken $total_time_taken"
-$log_content | out-file "C:\temp\loog.txt"
+$log_content | out-file "C:\temp\log.txt"
 
