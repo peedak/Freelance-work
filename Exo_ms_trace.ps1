@@ -19,7 +19,7 @@ Added no.9 the log file to follow https://cynicalsys.com/2019/09/13/working-with
 
 # input the path of your .csv file here
 $list_input = "C:\temp\noja.csv"
-$list = Import-Csv $list_input -Delimiter ","
+$list = Import-Csv $list_input -Delimiter ";"
 
 # one way of measuring the time of the script running, I personally like this one the best
 $stopwatch = [System.Diagnostics.Stopwatch]::StartNew()
@@ -37,7 +37,7 @@ $final_output = @()
 # function for the message trace itself, takes two parameters - senderaddress and subject
 function message_trace {
     param (
-        $senderaddress, $subject
+        $senderaddress, $subject, $messageid
     )
 
 # paging setup
