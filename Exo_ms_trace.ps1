@@ -17,6 +17,11 @@ Added no.9 the log file to follow https://cynicalsys.com/2019/09/13/working-with
 
 #endregion
 
+# check if EXO connection is active, is not then connect
+if (!(Get-ConnectionInformation | Where-Object {$psitem.Name -match 'ExchangeOnline' -and $psitem.state -eq 'Connected'})) {
+    Connect-ExchangeOnline 
+}
+
 # input the path of your .csv file here
 $list_input = "C:\temp\noja.csv"
 $list = Import-Csv $list_input -Delimiter ","
@@ -102,3 +107,5 @@ $global:final_output | Export-Csv "C:\temp\final_output.csv" -Force
 $log_content = "Total number of pages searched - $global:total_pages_searched, total number of emails searched $global:total_emails_searched, total time taken $total_time_taken"
 $log_content | out-file "C:\temp\log.txt" -Force
 
+# Disconnect EXO session ?
+# Disconnect-ExchangeOnline
