@@ -19,7 +19,7 @@ Added no.9 the log file to follow https://cynicalsys.com/2019/09/13/working-with
 
 # input the path of your .csv file here
 $list_input = "C:\temp\noja.csv"
-$list = Import-Csv $list_input -Delimiter ";"
+$list = Import-Csv $list_input -Delimiter ","
 
 # one way of measuring the time of the script running
 $stopwatch = [System.Diagnostics.Stopwatch]::StartNew()
@@ -33,6 +33,7 @@ $total_pages_searched = 0
 
 # creating an array for the final output
 $final_output = @()
+$diagnosing = @()
 
 # function for the message trace itself, takes two parameters - senderaddress and subject
 function message_trace {
@@ -44,8 +45,20 @@ function message_trace {
 $page = 1
 $message_list = @()
 
-do
-{
+# messageid purpose is to fetch the email address (sender,recipient) and email address. fetch the sender, recipient and add to the final output
+<# if ($messageid) {
+    try {
+        $email_from_id = Get-MessageTrace -MessageId $messageid -StartDate $10_days -EndDate $today
+        Write-Output $senderaddress
+        $message_list += ($email_from_id | Where-Object {$psitem.subject -like "*$subject*"})
+        $script:final_output += ($email_from_id | Where-Object {$psitem.subject -like "*$subject*"})
+    }
+    catch {
+        $PSItem
+    }    
+} else { #>
+    do
+    {
     Write-Output "Getting page $page of messages..."
     try {
         $messagesThisPage = Get-MessageTrace -SenderAddress $senderaddress -StartDate $10_days -EndDate $today -PageSize $pageSize -Page $page
@@ -57,28 +70,31 @@ do
     $page++
 
     # update the statistics variables
-    $script:total_emails_searched += $messagesThisPage.count
-    $script:total_pages_searched++
+    $global:total_emails_searched += $messagesThisPage.count
+    $global:total_pages_searched++
 
     # filter the results based on the given email subject and add to our final output array
-    $script:final_output += ($messagesThisPage | Where-Object {$psitem.subject -like "*$subject*"})
-    $message_list += ($messagesThisPage | Where-Object {$psitem.subject -like "*$subject*"})    
+    $global:final_output += ($messagesThisPage | Where-Object {$psitem.subject -like "*$subject*"})
+    $message_list += ($messagesThisPage | Where-Object {$psitem.subject -like "*$subject*"})
+    $global:diagnosing += $messagesThisPage
 
 } until ($messagesThisPage.count -lt $pageSize)
+}
 
 # call out the function itself again for each recipient
 foreach ($message_list_item in $message_list) {
     message_trace -senderaddress $message_list_item.RecipientAddress -subject $message_list_item.subject
-}
+} 
 
-}
+#}
 
 # iterate through the given .CSV and run the message_trace function for each, included write-progress so you can see the progress
 $i = 1
-$list | ForEach-Object {
+$list[0] | ForEach-Object {
+    Write-Output $psitem
     Write-Progress -Activity "Looping through the .csv" -status "$i of $($list.count)" -PercentComplete (($i / $list.count) * 100)
     $i++
-    message_trace -senderaddress $psitem.senderaddress -subject $psitem.subject
+    message_trace -senderaddress $psitem.senderaddress -subject $psitem.subject -messageid $psitem.messageid
 }
 
 Write-Progress -Activity "Looping through the .csv" -Status "Ready" -Completed
@@ -88,8 +104,9 @@ $stopwatch.Stop()
 $total_time_taken = "$($stopwatch.Elapsed.Hours) Hours, $($stopwatch.Elapsed.Seconds) seconds"
 
 # export the final csv and logs
-$final_output | Export-Csv "C:\temp\final_output.csv"
+$final_output | Export-Csv "C:\temp\final_output.csv" -Force
 
 $log_content = "Total number of pages searched - $total_pages_searched, total number of emails searched $total_emails_searched, total time taken $total_time_taken"
-$log_content | out-file "C:\temp\log.txt"
+$log_content | out-file "C:\temp\log.txt" -Force
 
+$diagnosing | Out-GridView
