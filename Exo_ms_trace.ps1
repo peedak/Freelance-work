@@ -21,10 +21,6 @@ Added no.9 the log file to follow https://cynicalsys.com/2019/09/13/working-with
 $list_input = "C:\temp\noja.csv"
 $list = Import-Csv $list_input -Delimiter ","
 
-$diagnosing_content = "C:\temp\diagnosing_log.txt"
-
-"list variable count $($list.count) `n" | Out-File $diagnosing_content -Append
-
 # one way of measuring the time of the script running
 $stopwatch = [System.Diagnostics.Stopwatch]::StartNew()
 
@@ -38,13 +34,16 @@ $global:total_pages_searched = 0
 # creating an array for the final output
 $global:final_output = @()
 
-# function for the message trace itself, takes two parameters - senderaddress and subject
+# array for each of the the recursive loop
+$global:recursive_results= @()
+
+# function for the message trace itself, takes three parameters - senderaddress, subject and messageid
 function message_trace {
     param (
         $senderaddress, $subject, $messageid
     )
 
-# paging setup
+# paging setup included if there should be over 5000 results on the page
 $page = 1
 $message_list = @()
 
@@ -64,29 +63,42 @@ do
     $global:total_emails_searched += $messagesThisPage.count
     $global:total_pages_searched++
 
-    #diagnosing 
-    "messages_this_page variable count $($messagesthispage.count) `n" | Out-File $diagnosing_content -Append
+    # filter our results by subject
+    $filtered_result = $messagesThisPage | Where-Object {$psitem.subject -like "*$subject*"}
 
-    # filter the results based on the given email subject and add to our final output array
-    $global:final_output += ($messagesThisPage | Where-Object {$psitem.subject -like "*$subject*"})
-    $message_list += ($messagesThisPage | Where-Object {$psitem.subject -like "*$subject*"}) 
-    "message_list variable count $($message_list.count) `n" | Out-File $diagnosing_content -Append   
-
+    # add to our final output array
+    $global:final_output += $filtered_result
+    $message_list += $filtered_result
+    
 } until ($messagesThisPage.count -lt $pageSize)
 
-# call out the function itself again for each recipient
+# using the power of recursive function, we call out the function again for each recipient. 
+
 foreach ($message_list_item in $message_list) {
-    message_trace -senderaddress $message_list_item.RecipientAddress -subject $message_list_item.subject
-    "message_list variable count $($message_list.count) `n" | Out-File $diagnosing_content -Append
-}
+    # Avoid endless loop by not running the same trace with the same sender address twice
+    $rec_add = $global:recursive_results.senderaddress
+    if ($rec_add -contains $message_list_item.recipientaddress) {
+       #Write-Output "AVOIDED ENDLESS LOOP"
+    } else {
+        $global:recursive_results += $message_list_item
+        message_trace -senderaddress $message_list_item.RecipientAddress -subject $subject_for_loop
+    }
+    }
+} 
 
-}
-
+#variables for usage in the function for loop
+$subject_for_loop = ""
 # iterate through the given .CSV and run the message_trace function for each, included write-progress so you can see the progress
 $i = 1
 $list | ForEach-Object {
+    # empty the recursive results array for the next loop in the function
+    $recursive_results = @()
+    # set the subject values for usage in the foreach loop in the function itself
+    $subject_for_loop = $psitem.subject
+    # write-progress so we can see the progress
     Write-Progress -Activity "Looping through the .csv" -status "$i of $($list.count)" -PercentComplete (($i / $list.count) * 100)
     $i++
+    # call out the function with the provided subject and senderaddress
     message_trace -senderaddress $psitem.senderaddress -subject $psitem.subject -messageid $psitem.messageid
 }
 
@@ -97,9 +109,10 @@ $stopwatch.Stop()
 $total_time_taken = "$($stopwatch.Elapsed.Hours) Hours, $($stopwatch.Elapsed.Seconds) seconds"
 
 # export the final csv and logs
-$global:final_output | Export-Csv "C:\temp\final_output.csv" -Force
+$final_output | Export-Csv "C:\temp\final_output.csv" -Force
+#$pask | Export-Csv "C:\temp\final_output.pask.csv" -Force
 
-$log_content = "Total number of pages searched - $global:total_pages_searched, total number of emails searched $global:total_emails_searched, total time taken $total_time_taken"
+$log_content = "Total number of pages searched $global:total_pages_searched, total number of emails searched $global:total_emails_searched, total time taken $total_time_taken"
 $log_content | out-file "C:\temp\log.txt" -Force
 
 # Disconnect EXO session ?
