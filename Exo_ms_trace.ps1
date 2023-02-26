@@ -23,7 +23,7 @@ param(
     [string]$imported_csv_path
 )
 
-$list = Import-Csv -Path $imported_csv_path.trim('"') -Delimiter ";"
+$list = Import-Csv -Path $imported_csv_path.trim('"') -Delimiter ","
 
 # input your log and exported .csv path here, example c:\temp\log.txt
 $exported_files_path = "C:\temp"
