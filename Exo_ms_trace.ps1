@@ -23,7 +23,17 @@ param(
     [string]$imported_csv_path
 )
 
-$list = Import-Csv -Path $imported_csv_path.trim('"') -Delimiter ","
+# clear any possible previous errors
+$error.Clear()
+
+# import the csv, using comma as a delimiter
+try {
+    $list = Import-Csv -ErrorAction Stop -Path $imported_csv_path.trim('"') -Delimiter "," 
+}
+catch {
+    $psitem
+    break
+}
 
 # input your log and exported .csv path here, example c:\temp\log.txt
 $exported_files_path = "C:\temp"
@@ -31,7 +41,6 @@ $exported_files_path = "C:\temp"
 $csv_to_export = "exported.csv"
 # input your name of the .log file to export - examsple log.txt
 $log_file_name = "log.txt"
-
 $csv_to_export_fullpath = $exported_files_path + "\" + $csv_to_export
 $log_file_to_export_fullpath = $exported_files_path + "\" + $log_file_name
 
@@ -147,6 +156,11 @@ Total time taken $total_time_taken  `n"
 $final_output | Export-Csv $csv_to_export_fullpath -Force
 $log_content | out-file $log_file_to_export_fullpath -Force
 ($all_users_stats | Format-Table | Out-String -Width 10000) | out-file $log_file_to_export_fullpath -Append
+
+# in case of any errors, we export all of the errors in to a log file
+if ($error) {
+    $error | Out-File ($exported_files_path + "\" + "ERROR.log") -Force
+}
 
 # Disconnect EXO session ?
 # Disconnect-ExchangeOnline
