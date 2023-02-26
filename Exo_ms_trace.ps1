@@ -17,9 +17,23 @@ Added no.9 the log file to follow https://cynicalsys.com/2019/09/13/working-with
 
 #endregion
 
-# input the path of your .csv file here
-$list_input = "C:\temp\noja.csv"
-$list = Import-Csv $list_input -Delimiter ","
+# .csv path to import
+param(
+    [Parameter(Mandatory=$true)]
+    [string]$imported_csv_path
+)
+
+$list = Import-Csv -Path $imported_csv_path.trim('"') -Delimiter ";"
+
+# input your log and exported .csv path here, example c:\temp\log.txt
+$exported_files_path = "C:\temp"
+# input your name of the .csv file to export here - example output.csv
+$csv_to_export = "exported.csv"
+# input your name of the .log file to export - examsple log.txt
+$log_file_name = "log.txt"
+
+$csv_to_export_fullpath = $exported_files_path + "\" + $csv_to_export
+$log_file_to_export_fullpath = $exported_files_path + "\" + $log_file_name
 
 # one way of measuring the time of the script running
 $stopwatch = [System.Diagnostics.Stopwatch]::StartNew()
@@ -28,14 +42,18 @@ $stopwatch = [System.Diagnostics.Stopwatch]::StartNew()
 $today = Get-Date
 $10_days = (Get-Date $today).AddDays(-10)
 $pageSize = 5000 # Max pagesize is 5000. There isn't really a reason to decrease this in this instance.
-$global:total_emails_searched = 0
-$global:total_pages_searched = 0
 
 # creating an array for the final output
 $global:final_output = @()
 
 # array for each of the the recursive loop
 $global:recursive_results= @()
+
+# variables for statistics
+$global:total_emails_searched = 0
+$global:total_pages_searched = 0
+$global:all_returned_email = @()
+$global:all_users_stats = @()
 
 # function for the message trace itself, takes three parameters - senderaddress, subject and messageid
 function message_trace {
@@ -56,24 +74,31 @@ do
     catch {
         $PSItem
     }
-    Write-Output "There were $($messagesThisPage.count) messages on page $page..."
-    $page++
-
+    
     # update the statistics variables
-    $global:total_emails_searched += $messagesThisPage.count
+    $global:all_returned_email += $messagesThisPage
     $global:total_pages_searched++
 
     # filter our results by subject
     $filtered_result = $messagesThisPage | Where-Object {$psitem.subject -like "*$subject*"}
 
+    # more statistics for the log file, for each senderaddress
+    $users_stats = $messagesThisPage | Select-Object @{N = 'senderaddress';  E = {$senderaddress}}, @{N = 'page nr.';  E = {$page}}, @{N = 'messages on this page';  E = {$messagesThisPage.count}}, @{N = 'hit on subject';  E = {($PSItem | Where-Object {$psitem.subject -like "*$subject*"}).subject}}, @{N = 'date';  E = {$psitem | Select-Object -ExpandProperty received}}
+    $global:all_users_stats += $users_stats
+
     # add to our final output array
     $global:final_output += $filtered_result
     $message_list += $filtered_result
+
+    # write output and increase the page count
+    Write-Output "There were $($messagesThisPage.count) messages on page $page..."
+    $page++
     
 } until ($messagesThisPage.count -lt $pageSize)
 
-# using the power of recursive function, we call out the function again for each recipient. 
+Write-Output "Message trace returned $($message_list.count) messages with our subject"
 
+# using the power of recursive function, we call out the function again for each recipient. 
 foreach ($message_list_item in $message_list) {
     # Avoid endless loop by not running the same trace with the same sender address twice
     $rec_add = $global:recursive_results.senderaddress
@@ -104,16 +129,24 @@ $list | ForEach-Object {
 
 Write-Progress -Activity "Looping through the .csv" -Status "Ready" -Completed
 
+# count all overall unique email addresses
+$all_unique_sender_addresses = $all_returned_email | Select-Object senderaddress -Unique
+$all_unique_recipient_adrresses = $all_returned_email | Select-Object recipientaddress -Unique
+$unique_addresses_overall = $all_unique_sender_addresses.count + $all_unique_recipient_adrresses.count
+
 # stop the stopwatch 
 $stopwatch.Stop()
-$total_time_taken = "$($stopwatch.Elapsed.Hours) Hours, $($stopwatch.Elapsed.Seconds) seconds"
+$total_time_taken = "$($stopwatch.Elapsed.Hours) Hours, $($stopwatch.Elapsed.Minutes) minutes, $($stopwatch.Elapsed.Seconds) seconds"
+
+$log_content = "Total number of unique email addresses overall (both sender and recipient) $unique_addresses_overall, `
+Total number of pages searched $total_pages_searched, `
+Total number of emails searched $($all_returned_email.count), `
+Total time taken $total_time_taken  `n"  
 
 # export the final csv and logs
-$final_output | Export-Csv "C:\temp\final_output.csv" -Force
-#$pask | Export-Csv "C:\temp\final_output.pask.csv" -Force
-
-$log_content = "Total number of pages searched $global:total_pages_searched, total number of emails searched $global:total_emails_searched, total time taken $total_time_taken"
-$log_content | out-file "C:\temp\log.txt" -Force
+$final_output | Export-Csv $csv_to_export_fullpath -Force
+$log_content | out-file $log_file_to_export_fullpath -Force
+($all_users_stats | Format-Table | Out-String -Width 10000) | out-file $log_file_to_export_fullpath -Append
 
 # Disconnect EXO session ?
 # Disconnect-ExchangeOnline
