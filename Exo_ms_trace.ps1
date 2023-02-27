@@ -32,7 +32,7 @@ $error.Clear()
 
 # import the csv, using comma as a delimiter
 try {
-    $list = Import-Csv -ErrorAction Stop -Path $file.trim('"') -Delimiter "," 
+    $list = Import-Csv -Path $file.trim('"') -Delimiter "," -ErrorAction Stop
 }
 catch {
     $psitem
