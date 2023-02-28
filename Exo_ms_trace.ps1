@@ -43,6 +43,8 @@ catch {
 #$exported_files_path = "C:\temp"
 # input your name of the .csv file to export here - example output.csv
 $csv_to_export = "exported.csv"
+# input your name of the other .csv file to export here - example output.csv
+$message_id_csv_to_export = "message_id_and_recipient.csv"
 # input your name of the .log file to export - examsple log.txt
 $log_file_name = "log.txt"
 #$csv_to_export_fullpath = $exported_files_path + "\" + $csv_to_export
@@ -176,13 +178,15 @@ Total number of emails searched $($all_returned_email.count), `
 Total time taken $total_time_taken  `n"  
 
 # export the final csv and logs
-$final_output | Export-Csv <# $csv_to_export_fullpath #> $csv_to_export -Force
-$log_content | out-file <# $log_file_to_export_fullpath #> $log_file_name -Force
-($all_users_stats | Format-Table | Out-String -Width 10000) | out-file <# $log_file_to_export_fullpath #> $log_file_name -Append
+$final_output | Export-Csv "$PSScriptRoot/$csv_to_export" -Force
+$message_id_rec_address_unique = $final_output | Select-Object messageid, recipientaddress -Unique
+$message_id_rec_address_unique | Export-Csv "$PSScriptRoot/$message_id_csv_to_export" -Force
+$log_content | out-file "$PSScriptRoot/$log_file_name" -Force
+($all_users_stats | Format-Table | Out-String -Width 10000) | out-file "$PSScriptRoot/$log_file_name" -Append
 
 # in case of any errors, we export all of the errors in to a log file
 if ($error) {
-    $error | Out-File ($exported_files_path + "\" + "ERROR.log") -Force
+    $error | Out-File ($PSScriptRoot + "\" + "ERROR.log") -Force
 }
 
 # Disconnect EXO session ?
