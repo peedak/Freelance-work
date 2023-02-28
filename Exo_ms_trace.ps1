@@ -86,10 +86,10 @@ if ($end -like "now") {
     $end = $end | Get-Date
 }
 
-# function for the message trace itself, takes three parameters - senderaddress, subject and messageid
+# function for the message trace itself, takes two parameters - senderaddress and subject
 function message_trace {
     param (
-        $senderaddress, $subject, $messageid
+        $senderaddress, $subject
     )
 
 # paging setup included if there should be over 5000 results on the page
@@ -157,7 +157,7 @@ if ($list) {
         Write-Progress -Activity "Looping through the .csv" -status "$i of $($list.count)" -PercentComplete (($i / $list.count) * 100)
         $i++
         # call out the function with the provided subject and senderaddress
-        message_trace -senderaddress $psitem.senderaddress -subject $psitem.subject -messageid $psitem.messageid -startdate $start -enddate $end
+        message_trace -senderaddress $psitem.senderaddress -subject $psitem.subject -startdate $start -enddate $end
     }
 }
 
