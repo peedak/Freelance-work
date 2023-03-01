@@ -180,8 +180,8 @@ Total time taken $total_time_taken  `n"
 # export the final csv and logs
 $final_output | Export-Csv "$PSScriptRoot/$csv_to_export" -Force
 # additional csv
-$message_id_rec_address_unique = $final_output | Select-Object messageid, recipientaddress -Unique
-$message_id_rec_address_unique | Select-Object @{N = 'message_id';  E = {$psitem.messageid}}, @{N = 'recipient';  E = {$psitem.recipientaddress}} | Export-Csv "$PSScriptRoot/$message_id_csv_to_export" -Force
+$message_id_rec_address_unique = $final_output | Select-Object @{N = 'message_id';  E = {$psitem.messageid -replace '[<>]',''}}, recipientaddress -Unique
+$message_id_rec_address_unique | Select-Object message_id, @{N = 'recipient';  E = {$psitem.recipientaddress}} | Export-Csv "$PSScriptRoot/$message_id_csv_to_export" -Force
 $log_content | out-file "$PSScriptRoot/$log_file_name" -Force
 ($all_users_stats | Format-Table | Out-String -Width 10000) | out-file "$PSScriptRoot/$log_file_name" -Append
 
