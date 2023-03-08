@@ -1,16 +1,16 @@
 #region 
 
-<# job description - 
+<# Client job description - 
 
-1. From a list of email addresses, together with an email subject OR messageid in a csv file
-2. iterate through the list of email addresses and the email subject.
-3. Perform a message trace for each email address and email subject using the Get-MessageTrace cmdlet
-4. Extract all the recipients
+1. CSV with a list of email addresses, together with an email subject.
+2. Iterate through the list of email addresses and the email subject.
+3. Perform a message trace for each email address and email subject using the Get-MessageTrace cmdlet.
+4. Extract all the recipients.
 5. Use a loop to iterate through all the recipients and perform a message trace on each recipient, together with an email subject that was identified in step 1
 6. Repeat steps 4 and 5 until there are no more results.
 7. Repeat steps 2 to 6 for all initial email addresses and subjects until there are no more results.
-8. the desired output will have all the email events and all its available fields to a csv file.
-9. create a log that logs the number of page and its message searched, Total number of message searched. and total time taken 
+8. The desired output will have all the email events and all its available fields to a csv file.
+9. Create a log that logs the number of page and its message searched, Total number of message searched, and total time taken.
 
 Added no.9 the log file to follow https://cynicalsys.com/2019/09/13/working-with-large-exchange-messages-traces-in-powershell/
 #>
@@ -36,7 +36,7 @@ try {
 }
 catch {
     $psitem
-    break
+    exit
 }
 
 # enter the name of the .csv file to export here
@@ -72,7 +72,7 @@ $start = $start | Get-Date
 # check if startdate is older than 10 days 
 if ([datetime]$10_days.ToShortDateString() -gt $start) {
     Write-Output "Startdate can't be older than 10 days"
-    break
+    exit
 }
 
 # if end is specified as "now", set it as todays date
