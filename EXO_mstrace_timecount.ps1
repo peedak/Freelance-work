@@ -79,7 +79,7 @@ $stopwatch.Stop()
 
 # export the log and .csv
 $total_time_taken = "$($stopwatch.Elapsed.Hours) Hours, $($stopwatch.Elapsed.Minutes) minutes, $($stopwatch.Elapsed.Seconds) seconds"
-"The script took a total of $total_time_taken" | out-file "$PSScriptRoot/log.txt" -Force
+"The script took a total of $total_time_taken and looped through $i of $($mailboxes.count) mailboxes to reach email count of $count " | out-file "$PSScriptRoot/log.txt" -Force
 if ($message_list.Count -le 2000000) {
     $message_list | Export-Csv "$PSScriptRoot/output.csv" -Force
 }
