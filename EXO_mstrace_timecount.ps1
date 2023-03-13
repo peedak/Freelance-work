@@ -8,6 +8,8 @@ pre-stage: create script to find out the below (i will use the script to test in
 1) find out how long it takes to reach 1,000,000 messages. Record all the message into csv. Yes, 1 million of message into csv
 2) find out how long it takes to reach 5,000,000 messages. No csv needed because excel csv max row is only 2 million
 
+### work in progress
+
 #>
 
 #endregion
@@ -23,7 +25,7 @@ $today = Get-Date
 $10_days = ($today).AddDays(-10)
 $pageSize = 5000
 # just a sidenote, maximum supported page number is 1000, but by then there's a high probability we might get throttled by MS
-$page = 1
+
 
 <# 
 we won't be using " += " for populating our array, since it might consume a lot of resources for millions of emails. 
@@ -34,30 +36,36 @@ $message_list = [System.Collections.ArrayList]::new()
 # start the stopwatch 
 $stopwatch = [System.Diagnostics.Stopwatch]::StartNew()
 
-do {
-    Write-Output "Getting page $page of messages..."
-    try {
-        # run the message trace
-        $messagesThisPage = Get-MessageTrace -StartDate $10_days -EndDate $today -PageSize $pageSize -Page $page
-    }
-    catch {
-    $PSItem
-    }
-    
-    # populate the array. break the loop when our array reaches the 1 million count
-    $messagesThisPage | ForEach-Object {
-        if ($message_list.Count -lt $count) {
-            $message_list.Add($PSItem) | Out-Null
-        } else {
-            break
-        }
-    }
+$mailboxes = Get-Mailbox -ResultSize 30
 
-    # write output and increase the page count
-    Write-Output "There were $($messagesThisPage.count) messages on page $page..."
-    $page++ 
+foreach ($mbox in $mailboxes) {
+$page = 1
+    do {
+        Write-Output "Getting page $page of messages..."
+        try {
+            # run the message trace
+            $messagesThisPage = Get-MessageTrace -SenderAddress $mbox.primarysmtpaddress -StartDate $10_days -EndDate $today -PageSize $pageSize -Page $page
+        }
+        catch {
+        $PSItem
+        }
+        
+        # populate the array. break the loop when our array reaches the 1 million count
+        $messagesThisPage | ForEach-Object {
+            if ($message_list.Count -lt $count) {
+                $message_list.Add($PSItem) | Out-Null
+            } else {
+                # break both loops here
+                break
+            }
+        }
     
-} until ($messagesThisPage.count -lt $pageSize)
+        # write output and increase the page count
+        Write-Output "There were $($messagesThisPage.count) messages on page $page..."
+        $page++ 
+        
+    } until ($messagesThisPage.count -lt $pageSize)
+}
 
 # stop the stopwatch 
 $stopwatch.Stop()
