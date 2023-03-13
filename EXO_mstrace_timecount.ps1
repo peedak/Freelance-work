@@ -36,11 +36,15 @@ $message_list = [System.Collections.ArrayList]::new()
 $stopwatch = [System.Diagnostics.Stopwatch]::StartNew()
 
 # get all the mailboxes and use the primarysmtpaddress in the message-trace. the get-messagetrace cmdlet seems to be not working for now without senderaddress parameter. 
-$mailboxes = Get-Mailbox -ResultSize unlimited
+$mailboxes = Get-Mailbox -ResultSize unlimited 
 
+# $i for the writeprogress
 $i = 1
-foreach ($mbox in $mailboxes) {
+
+# loop through all mailboxes
+:mbox_loop foreach ($mbox in $mailboxes) {
     $page = 1
+        
         do {
             Write-Output "Getting page $page of messages..."
             try {
@@ -51,22 +55,21 @@ foreach ($mbox in $mailboxes) {
             $PSItem
             }
 
+            # write output and increase the page count
+            Write-Output "There were $($messagesThisPage.count) messages on page $page..."
+            $page++ 
+
             # populate the array. break the loop when our array reaches the 1 million count
             $messagesThisPage | ForEach-Object {
                 if ($message_list.Count -lt $count) {
                     $message_list.Add($PSItem) | Out-Null
                 } else {
-                    # break both loops here
-                    break
+                    #break mbox_loop
+                    break mbox_loop
                 }
             }
         
-            # write output and increase the page count
-            Write-Output "There were $($messagesThisPage.count) messages on page $page..."
-            $page++ 
-        
-        } until ($messagesThisPage.count -lt $pageSize)
-
+        } until (($messagesThisPage.count -lt $pageSize))
     Write-Progress -Activity "Looping through the mailboxes" -status "$i of $($mailboxes.count)" -PercentComplete (($i / $mailboxes.count) * 100)
     $i++
 }
